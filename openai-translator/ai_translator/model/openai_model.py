@@ -1,17 +1,22 @@
-import requests
-import simplejson
 import time
 import os
 import openai
-
+from typing import Optional
 from model import Model
 from utils import LOG
 from openai import OpenAI
 
 class OpenAIModel(Model):
-    def __init__(self, model: str, api_key: str):
+    def __init__(self, model: str, api_key: Optional[str] = None, base_url: Optional[str] = None):
         self.model = model
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        if not api_key and not base_url:
+            self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        elif not api_key and base_url:
+            self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=base_url)
+        elif api_key and not base_url:
+            self.client = OpenAI(api_key=api_key)
+        else:
+            self.client = OpenAI(api_key=api_key, base_url=base_url)
 
     def make_request(self, prompt):
         attempts = 0
@@ -46,7 +51,7 @@ class OpenAIModel(Model):
                 print("The server could not be reached")
                 print(e.__cause__)  # an underlying Exception, likely raised within httpx.            except requests.exceptions.Timeout as e:
             except openai.APIStatusError as e:
-                print("Another non-200-range status code was received")
+                print("Another non-200-range status code was received", e)
                 print(e.status_code)
                 print(e.response)
             except Exception as e:

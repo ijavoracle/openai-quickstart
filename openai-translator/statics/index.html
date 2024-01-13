@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>文件上传</title>
+</head>
+<body>
+    <form action="/translate" method="POST" enctype="multipart/form-data">
+        <label for="file">选择文件:</label><br>
+        <input type="file" id="file" name="file"><br>
+        <label for="target_language">目标语言:</label><br>
+        <input type="text" id="target_language" name="target_language"><br>
+        <label for="file_format">文件格式:</label><br>
+        <select id="file_format" name="file_format">
+            <option value="pdf">pdf</option>
+            <option value="markdown">markdown</option>
+        </select><br>
+        <input type="submit" value="提交">
+    </form>
+</body>
+</html>
