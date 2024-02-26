@@ -1,16 +1,28 @@
 import gradio as gr
+import os
+from dotenv import load_dotenv
 
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 
+# 加载定义在.env文件中的openai_api_Key配置信息
+load_dotenv()
 
-def initialize_sales_bot(vector_store_dir: str="real_estates_sale"):
-    db = FAISS.load_local(vector_store_dir, OpenAIEmbeddings())
-    llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
-    
-    global SALES_BOT    
+
+def initialize_sales_bot(vector_store_dir: str):
+    api_base_url = os.environ["API_BASE_URL"]
+    api_key = os.environ["OPENAI_API_KEY"]
+    embeddings = OpenAIEmbeddings(
+        openai_api_base=api_base_url,
+        openai_api_key=api_key
+    )
+    db = FAISS.load_local(vector_store_dir, embeddings)
+
+    llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0,  openai_api_base=api_base_url, openai_api_key=api_key)
+
+    global SALES_BOT
     SALES_BOT = RetrievalQA.from_chain_type(llm,
                                            retriever=db.as_retriever(search_type="similarity_score_threshold",
                                                                      search_kwargs={"score_threshold": 0.8}))
@@ -38,9 +50,14 @@ def sales_chat(message, history):
     
 
 def launch_gradio():
+    scenario = os.environ["scenario"]
+    title = "房产销售"
+    if scenario == 'car_sales':
+        title = "汽车销售"
+
     demo = gr.ChatInterface(
         fn=sales_chat,
-        title="房产销售",
+        title=title,
         # retry_btn=None,
         # undo_btn=None,
         chatbot=gr.Chatbot(height=600),
@@ -48,8 +65,14 @@ def launch_gradio():
 
     demo.launch(share=True, server_name="0.0.0.0")
 
+
 if __name__ == "__main__":
-    # 初始化房产销售机器人
-    initialize_sales_bot()
+    # 根据环境变量确定要初始化的向量数据库  real_estate
+    vector_store = "real_estates_sale"
+    if os.environ["scenario"] == 'car_sales':
+        vector_store = "bmw_sales_data"
+
+    # 初始化销售机器人
+    initialize_sales_bot(vector_store)
     # 启动 Gradio 服务
     launch_gradio()
